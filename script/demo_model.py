@@ -67,6 +67,9 @@ def main():
     print("Loading model...")
     model = BertWSD.from_pretrained(args.model_dir)
     tokenizer = BertTokenizer.from_pretrained(args.model_dir)
+    # fix `"RuntimeError: CUDA error: CUBLAS_STATUS_NOT_INITIALIZED when calling cublasCreate(handle)"`
+    # see: https://github.com/BPYap/BERT-WSD/issues/3
+    tokenizer.added_tokens_encoder['[TGT]'] = 100
     model.to(DEVICE)
     model.eval()
 
