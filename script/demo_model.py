@@ -7,6 +7,9 @@ from torch.nn.functional import softmax
 from tqdm import tqdm
 from transformers import BertTokenizer
 
+import nltk
+nltk.download('omw-1.4')
+
 from utils.dataset import GlossSelectionRecord, _create_features_from_records
 from utils.model import BertWSD, forward_gloss_selection
 from utils.wordnet import get_glosses
@@ -14,8 +17,6 @@ from utils.wordnet import get_glosses
 MAX_SEQ_LENGTH = 128
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-import nltk
-nltk.download('omw-1.4')
 
 def get_predictions(model, tokenizer, sentence):
     re_result = re.search(r"\[TGT\](.*)\[TGT\]", sentence)
