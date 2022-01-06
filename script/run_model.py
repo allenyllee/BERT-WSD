@@ -76,14 +76,25 @@ def train(args, model, tokenizer, train_dataloader, eval_during_training=False):
         optimizer, num_warmup_steps=args.warmup_steps, num_training_steps=t_total
     )
 
-    # Check if saved optimizer or scheduler states exist
-    if (
-            os.path.isfile(os.path.join(args.model_name_or_path, "optimizer.pt"))
-            and os.path.isfile(os.path.join(args.model_name_or_path, "scheduler.pt"))
-    ):
-        # Load in optimizer and scheduler states
-        optimizer.load_state_dict(torch.load(os.path.join(args.model_name_or_path, "optimizer.pt")))
-        scheduler.load_state_dict(torch.load(os.path.join(args.model_name_or_path, "scheduler.pt")))
+    # print(len(optimizer.param_groups[0]['params']))
+    # print(len(optimizer.param_groups[1]['params']))
+
+    try:
+        # Check if saved optimizer or scheduler states exist
+        if (
+                os.path.isfile(os.path.join(args.model_name_or_path, "optimizer.pt"))
+                and os.path.isfile(os.path.join(args.model_name_or_path, "scheduler.pt"))
+        ):
+            # Load in optimizer and scheduler states
+            ckpoint = torch.load(os.path.join(args.model_name_or_path, "optimizer.pt"))
+            # print(len(ckpoint['param_groups'][0]['params']))
+            # print(len(ckpoint['param_groups'][1]['params']))
+            optimizer.load_state_dict(torch.load(os.path.join(args.model_name_or_path, "optimizer.pt")))
+            scheduler.load_state_dict(torch.load(os.path.join(args.model_name_or_path, "scheduler.pt")))
+    except Exception as e:
+        logger.error(e)
+        # print(e)
+        pass
 
     if args.fp16:
         try:
@@ -124,16 +135,21 @@ def train(args, model, tokenizer, train_dataloader, eval_during_training=False):
     epochs_trained = 0
     steps_trained_in_current_epoch = 0
     # Check if continuing training from a checkpoint
-    if os.path.exists(args.model_name_or_path):
-        # set global_step to gobal_step of last saved checkpoint from model path
-        global_step = int(args.model_name_or_path.split("-")[-1].split("/")[0])
-        epochs_trained = global_step // (len(train_dataloader) // args.gradient_accumulation_steps)
-        steps_trained_in_current_epoch = global_step % (len(train_dataloader) // args.gradient_accumulation_steps)
+    try:
+        if os.path.exists(args.model_name_or_path):
+            # set global_step to gobal_step of last saved checkpoint from model path
+            global_step = int(args.model_name_or_path.split("-")[-1].split("/")[0])
+            epochs_trained = global_step // (len(train_dataloader) // args.gradient_accumulation_steps)
+            steps_trained_in_current_epoch = global_step % (len(train_dataloader) // args.gradient_accumulation_steps)
 
-        logger.info("  Continuing training from checkpoint, will skip to saved global_step")
-        logger.info("  Continuing training from epoch %d", epochs_trained)
-        logger.info("  Continuing training from global step %d", global_step)
-        logger.info("  Will skip the first %d steps in the first epoch", steps_trained_in_current_epoch)
+            logger.info("  Continuing training from checkpoint, will skip to saved global_step")
+            logger.info("  Continuing training from epoch %d", epochs_trained)
+            logger.info("  Continuing training from global step %d", global_step)
+            logger.info("  Will skip the first %d steps in the first epoch", steps_trained_in_current_epoch)
+    except Exception as e:
+        logger.error(e)
+        # print(e)
+        pass
 
     tr_loss, logging_loss = 0.0, 0.0
     model.zero_grad()
@@ -175,7 +191,10 @@ def train(args, model, tokenizer, train_dataloader, eval_during_training=False):
                 model.zero_grad()
                 global_step += 1
 
+                # print("global_step=", global_step)
+
                 if args.local_rank in [-1, 0] and args.logging_steps > 0 and global_step % args.logging_steps == 0:
+                    # print("enter logging_steps")
                     logs = {}
                     if args.local_rank == -1 and eval_during_training:
                         # Only evaluate when single GPU otherwise metrics may not average well
@@ -194,6 +213,7 @@ def train(args, model, tokenizer, train_dataloader, eval_during_training=False):
                         print(json.dumps({**logs, **{"step": global_step}}), file=f)
 
                 if args.local_rank in [-1, 0] and args.save_steps > 0 and global_step % args.save_steps == 0:
+                    # print("enter save_steps")
                     # Save model checkpoint
                     output_dir = os.path.join(args.output_dir, "checkpoint-{}".format(global_step))
                     if not os.path.exists(output_dir):
@@ -202,7 +222,13 @@ def train(args, model, tokenizer, train_dataloader, eval_during_training=False):
                         model.module if hasattr(model, "module") else model
                     )  # Take care of distributed/parallel training
                     model_to_save.save_pretrained(output_dir)
+                    # delete '[TGT]' before save tokenizer
+                    del tokenizer.added_tokens_encoder['[TGT]']
                     tokenizer.save_pretrained(output_dir)
+                    # add '[TGT]' back
+                    # fix `"RuntimeError: CUDA error: CUBLAS_STATUS_NOT_INITIALIZED when calling cublasCreate(handle)"`
+                    # see: https://github.com/BPYap/BERT-WSD/issues/3
+                    tokenizer.added_tokens_encoder['[TGT]'] = 100
 
                     torch.save(args, os.path.join(output_dir, "training_args.bin"))
                     logger.info("Saving model checkpoint to %s", output_dir)
@@ -535,7 +561,13 @@ def main():
                 model.module if hasattr(model, "module") else model
             )  # Take care of distributed/parallel training
             model_to_save.save_pretrained(args.output_dir)
+            # delete '[TGT]' before save tokenizer
+            del tokenizer.added_tokens_encoder['[TGT]']
             tokenizer.save_pretrained(args.output_dir)
+            # add '[TGT]' back
+            # fix `"RuntimeError: CUDA error: CUBLAS_STATUS_NOT_INITIALIZED when calling cublasCreate(handle)"`
+            # see: https://github.com/BPYap/BERT-WSD/issues/3
+            tokenizer.added_tokens_encoder['[TGT]'] = 100
 
             # Good practice: save your training arguments together with the trained model
             torch.save(args, os.path.join(args.output_dir, "training_args.bin"))
@@ -545,6 +577,13 @@ def main():
         # Load fine-tuned model and vocabulary
         model = BertWSD.from_pretrained(args.output_dir)
         tokenizer = BertTokenizer.from_pretrained(args.output_dir)
+        # add new special token
+        # fix `"RuntimeError: CUDA error: CUBLAS_STATUS_NOT_INITIALIZED when calling cublasCreate(handle)"`
+        # see: https://github.com/BPYap/BERT-WSD/issues/3
+        tokenizer.added_tokens_encoder['[TGT]'] = 100
+        print("add new special token")
+        print(tokenizer.additional_special_tokens)
+        print(tokenizer.added_tokens_encoder)
         model.to(args.device)
 
         eval_loss = evaluate(args, model, tokenizer)

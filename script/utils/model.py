@@ -49,6 +49,12 @@ def get_model_and_tokenizer(args):
     )
 
     # add new special token
+    # fix `"RuntimeError: CUDA error: CUBLAS_STATUS_NOT_INITIALIZED when calling cublasCreate(handle)"`
+    # see: https://github.com/BPYap/BERT-WSD/issues/3
+    tokenizer.added_tokens_encoder['[TGT]'] = 100
+    print("add new special token")
+    print(tokenizer.additional_special_tokens)
+    print(tokenizer.added_tokens_encoder)
     if '[TGT]' not in tokenizer.additional_special_tokens:
         tokenizer.add_special_tokens({'additional_special_tokens': ['[TGT]']})
         assert '[TGT]' in tokenizer.additional_special_tokens
@@ -65,6 +71,7 @@ def get_model_and_tokenizer(args):
 
 def _forward(args, model, batch):
     batch = tuple(t.to(args.device) for t in batch)
+    # print(batch[0])
     outputs = model.bert(input_ids=batch[0], attention_mask=batch[1], token_type_ids=batch[2])
 
     return model.dropout(outputs[1])
