@@ -199,6 +199,7 @@ def train(args, model, tokenizer, train_dataloader, eval_during_training=False):
                     if args.local_rank == -1 and eval_during_training:
                         # Only evaluate when single GPU otherwise metrics may not average well
                         logs["eval_loss"] = evaluate(args, model, tokenizer, global_step)
+                        logs["default_eval_loss"] = default_evaluate(args, model, tokenizer, global_step)
 
                     loss_scalar = (tr_loss - logging_loss) / args.logging_steps
                     learning_rate_scalar = scheduler.get_lr()[0]
@@ -279,6 +280,38 @@ def evaluate(args, model, tokenizer, suffix=None):
 
     eval_loss = eval_loss / nb_eval_steps
     write_predictions(args.output_dir, args.eval_path, predictions, suffix)
+
+    return eval_loss.item()
+
+def default_evaluate(args, model, tokenizer, suffix=None):
+    eval_path = 'BERT-WSD/data/dev/semeval2007.csv'
+    eval_dataset = load_dataset(eval_path, tokenizer, args.max_seq_length)
+
+    args.eval_batch_size = args.eval_batch_size
+    eval_sampler = SequentialSampler(eval_dataset)
+    eval_dataloader = DataLoader(eval_dataset,
+                                 sampler=eval_sampler, batch_size=args.eval_batch_size,
+                                 collate_fn=collate_batch)
+
+    # Eval
+    logger.info("***** Running evaluation *****")
+    logger.info("  Num examples = %d", len(eval_dataset))
+    logger.info("  Batch size = %d", args.eval_batch_size)
+    eval_loss = 0.0
+    nb_eval_steps = 0
+
+    predictions = []
+    for batches in tqdm(eval_dataloader, desc="Evaluating"):
+        model.eval()
+        with torch.no_grad():
+            loss, logits_list = forward_gloss_selection(args, model, batches)
+
+        eval_loss += loss
+        predictions.extend([torch.argmax(logits, dim=-1).item() for logits in logits_list])
+        nb_eval_steps += 1
+
+    eval_loss = eval_loss / nb_eval_steps
+    write_predictions(args.output_dir, eval_path, predictions, suffix)
 
     return eval_loss.item()
 
