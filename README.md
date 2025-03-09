@@ -1,6 +1,6 @@
 # BERT-WSD
 This is the official code repository for the Findings of EMNLP 2020 paper "[Adapting BERT for Word Sense Disambiguation with Gloss Selection Objective and Example Sentences](https://arxiv.org/abs/2009.11795)".
- 
+
 ## Installation
 ```
 python3 -m virtualenv env
@@ -11,14 +11,14 @@ pip install -r requirements.txt
 
 
 ## Pre-trained models
-All datasets and pre-trained models are available for download [here](https://entuedu-my.sharepoint.com/:f:/g/personal/boonpeng001_e_ntu_edu_sg/EpCcVDhHWtZKp50duiIcGbABIpPfUhok-vJisRk7Ri9RnA?e=cHTrUp). 
+All datasets and pre-trained models are available for download [here](https://entuedu-my.sharepoint.com/:f:/g/personal/boonpeng001_e_ntu_edu_sg/EpCcVDhHWtZKp50duiIcGbABIpPfUhok-vJisRk7Ri9RnA?e=cHTrUp).
 
 ### Experiment results
 | Checkpoint           | Parameters    | SE07      | SE2      | SE3      | SE13     | SE15     | ALL      |
 | ---------------------|:-------------:|:---------:|:--------:|:--------:|:--------:|:--------:|:--------:|
 | [BERT-base-baseline](https://entuedu-my.sharepoint.com/:f:/g/personal/boonpeng001_e_ntu_edu_sg/EqmcCr9jiCJFt0uQ8WhjmQwBZL3skr1b-J01NnNo7NEJPg?e=MAmNSB)   | 110M          | **73.6**  | 79.4     | 76.8     | 77.4     | 81.5     | 78.2     |
-| [BERT-base-augmented](https://entuedu-my.sharepoint.com/:f:/g/personal/boonpeng001_e_ntu_edu_sg/EiWzblOyyOBDtuO3klUbXoAB3THFzke-2MLWguIXrDopWg?e=08umXD)  | 110M          | **73.6**  | 79.3     | 76.9     | 79.1     | 82.0     | 78.7     | 
-| [BERT-large-baseline](https://entuedu-my.sharepoint.com/:f:/g/personal/boonpeng001_e_ntu_edu_sg/Ep1Uw0RBthJJv-pGAJtmOiQBFIXB3fAXuGYDxxNRRLrlbg?e=YgSa1T)  | 340M          | 73.0      | **79.9** | 77.4     | 78.2     | 81.8     | 78.7     | 
+| [BERT-base-augmented](https://entuedu-my.sharepoint.com/:f:/g/personal/boonpeng001_e_ntu_edu_sg/EiWzblOyyOBDtuO3klUbXoAB3THFzke-2MLWguIXrDopWg?e=08umXD)  | 110M          | **73.6**  | 79.3     | 76.9     | 79.1     | 82.0     | 78.7     |
+| [BERT-large-baseline](https://entuedu-my.sharepoint.com/:f:/g/personal/boonpeng001_e_ntu_edu_sg/Ep1Uw0RBthJJv-pGAJtmOiQBFIXB3fAXuGYDxxNRRLrlbg?e=YgSa1T)  | 340M          | 73.0      | **79.9** | 77.4     | 78.2     | 81.8     | 78.7     |
 | [BERT-large-augmented](https://entuedu-my.sharepoint.com/:f:/g/personal/boonpeng001_e_ntu_edu_sg/EqZjlCC79rRKrEUWBEm6s98BzeQYMWZNydAKLOzGDgD8Eg?e=rjZKTV) | 340M          | 72.7      | 79.8     | **77.8** | **79.7** | **84.4** | **79.5** |
 
 ### Command line demo
@@ -130,7 +130,7 @@ python script/prepare_dataset.py \
 Usage:
 ```
 python script/run_model.py --do_train --train_path TRAIN_PATH
-                           --model_name_or_path MODEL_NAME_OR_PATH 
+                           --model_name_or_path MODEL_NAME_OR_PATH
                            --output_dir OUTPUT_DIR
                            [--evaluate_during_training]
                            [--eval_path EVAL_PATH]
@@ -138,7 +138,7 @@ python script/run_model.py --do_train --train_path TRAIN_PATH
                            [--gradient_accumulation_steps GRADIENT_ACCUMULATION_STEPS]
                            [--learning_rate LEARNING_RATE]
                            [--num_train_epochs NUM_TRAIN_EPOCHS]
-                           [--logging_steps LOGGING_STEPS] 
+                           [--logging_steps LOGGING_STEPS]
                            [--save_steps SAVE_STEPS]
 
 arguments:
@@ -175,13 +175,13 @@ arguments:
 
 Example:
 ```
-python script/run_model.py \
+python BERT-WSD/script/run_model.py \
     --do_train \
-    --train_path "data/train/semcor-max_num_gloss=6-augmented.csv" \
+    --train_path "BERT-WSD/data/train/semcor-max_num_gloss=7-augmented_all.csv" \
     --model_name_or_path "bert-base-uncased" \
-    --output_dir "model/bert_base-augmented-batch_size=128-lr=2e-5-max_gloss=6" \
+    --output_dir "BERT-WSD/model/test/bert_base-augmented-batch_size=128-lr=2e-5-max_gloss=7" \
     --evaluate_during_training \
-    --eval_path "data/dev/semeval2007.csv" \
+    --eval_path "BERT-WSD/data/dev/semeval2007.csv" \
     --per_gpu_train_batch_size 8 \
     --gradient_accumulation_steps 16 \
     --learning_rate 2e-5 \
@@ -190,13 +190,48 @@ python script/run_model.py \
     --save_steps 1000
 ```
 
+```
+python BERT-WSD/script/run_model.py \
+    --do_train \
+    --train_path "BERT-WSD/data/train/semcor-max_num_gloss=10-augmented_all.csv" \
+    --model_name_or_path "BERT-WSD/model/bert_base-augmented-batch_size=128-lr=2e-5-max_gloss=6" \
+    --output_dir "BERT-WSD/model/test3/bert_base-augmented-batch_size=128-lr=2e-5-max_gloss=10" \
+    --overwrite_output_dir \
+    --evaluate_during_training \
+    --eval_path "BERT-WSD/data/dev/semeval2007.csv" \
+    --per_gpu_train_batch_size 16 \
+    --gradient_accumulation_steps 8 \
+    --learning_rate 2e-5 \
+    --num_train_epochs 4 \
+    --logging_steps 50 \
+    --save_steps 200
+```
+
+
+
+```
+python BERT-WSD/script/run_model.py \
+    --do_train \
+    --train_path "BERT-WSD/data/train/our_train_data-max_num_gloss=12-augmented2.csv" \
+    --model_name_or_path "BERT-WSD/model/bert_base-augmented-batch_size=128-lr=2e-5-max_gloss=6" \
+    --output_dir "BERT-WSD/model/our_train_data2/bert_base-augmented-batch_size=128-lr=2e-5-max_gloss=12" \
+    --evaluate_during_training \
+    --eval_path "BERT-WSD/data/dev/our_test_data-max_num_gloss=12-augmented2.csv" \
+    --per_gpu_train_batch_size 4 \
+    --gradient_accumulation_steps 2 \
+    --learning_rate 2e-5 \
+    --num_train_epochs 2 \
+    --logging_steps 4 \
+    --save_steps 4
+```
+
 
 ## Evaluation
 ### Generate predictions
 Usage:
 ```
 python script/run_model.py --do_eval --eval_path EVAL_PATH
-                           --model_name_or_path MODEL_NAME_OR_PATH 
+                           --model_name_or_path MODEL_NAME_OR_PATH
                            --output_dir OUTPUT_DIR
 
 arguments:
@@ -217,6 +252,32 @@ python script/run_model.py \
     --model_name_or_path "model/bert_large-augmented-batch_size=128-lr=2e-5-max_gloss=6" \
     --output_dir "model/bert_large-augmented-batch_size=128-lr=2e-5-max_gloss=6"
 ```
+
+```
+python BERT-WSD/script/run_model.py \
+    --do_eval \
+    --eval_path "BERT-WSD/data/dev/semeval2007.csv" \
+    --model_name_or_path "BERT-WSD/model/bert_base-augmented-batch_size=128-lr=2e-5-max_gloss=6" \
+    --output_dir "BERT-WSD/model/bert_base-augmented-batch_size=128-lr=2e-5-max_gloss=6"
+```
+
+
+```
+python BERT-WSD/script/run_model.py \
+    --do_eval \
+    --eval_path "BERT-WSD/data/dev/our_test_data-max_num_gloss=6-augmented.csv" \
+    --model_name_or_path "BERT-WSD/model/test/bert_base-augmented-batch_size=128-lr=2e-5-max_gloss=7" \
+    --output_dir "BERT-WSD/model/test/bert_base-augmented-batch_size=128-lr=2e-5-max_gloss=7"
+```
+
+```
+python BERT-WSD/script/run_model.py \
+    --do_eval \
+    --eval_path "BERT-WSD/data/dev/semeval2007.csv" \
+    --model_name_or_path "BERT-WSD/model/our_train_data2/bert_base-augmented-batch_size=128-lr=2e-5-max_gloss=12/checkpoint-16" \
+    --output_dir "BERT-WSD/model/our_train_data2/bert_base-augmented-batch_size=128-lr=2e-5-max_gloss=12/checkpoint-16"
+```
+
 
 ### Scoring
 Usage:
